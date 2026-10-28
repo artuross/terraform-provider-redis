@@ -1,0 +1,19 @@
+$schema: "../../.moon/cache/schemas/project.json"
+
+id: "examples/basic"
+language: "unknown"
+layer: "configuration"
+tags: ["example"]
+
+env:
+  REDIS_USERNAME: "terraform"
+  REDIS_PASSWORD: "secret"
+
+tasks:
+  fcall:
+    description: "Call a function: `moon run examples/basic:fcall -- count 1 visits`."
+    command: "docker compose exec redis redis-cli --user $REDIS_USERNAME --pass $REDIS_PASSWORD --no-auth-warning FCALL"
+    options:
+      cache: false
+      runInCI: false
+    toolchains: ["system"]

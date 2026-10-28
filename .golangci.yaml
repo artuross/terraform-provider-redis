@@ -1,0 +1,47 @@
+version: "2"
+
+run:
+  # test files are tagged, format them too
+  build-tags:
+    - integration
+    - unit
+
+  # fail if go.mod/go.sum would need changes
+  modules-download-mode: readonly
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/artuross/terraform-provider-redis)
+
+    gofmt:
+      simplify: true
+
+    gofumpt:
+      extra:
+        balance-calls: true
+        clothe-returns: true
+        group-params: true
+
+    goimports:
+      local-prefixes:
+        - github.com/artuross/terraform-provider-redis
+
+    golines:
+      chain-split-dots: true
+      max-len: 120
+      reformat-tags: true
+      shorten-comments: true
+      tab-len: 4
+
+linters:
+  default: none

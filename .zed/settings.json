@@ -1,0 +1,14 @@
+{
+	"lsp": {
+		// https://github.com/golang/tools/blob/master/gopls/doc/settings.md
+		"gopls": {
+			"initialization_options": {
+				// test files are tagged (`//go:build unit` / `integration`), without the tags gopls ignores them
+				"buildFlags": ["--tags=integration,unit"],
+
+				// keep gopls out of non-Go directories
+				"directoryFilters": ["-bin", "-docs", "-.jj", "-.moon"],
+			},
+		},
+	},
+}

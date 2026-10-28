@@ -1,0 +1,4 @@
+$schema: "./cache/schemas/toolchains.json"
+
+# go version is managed by mise, moon uses the binary from PATH
+go: {}

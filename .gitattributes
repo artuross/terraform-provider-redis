@@ -1,0 +1,4 @@
+*			text=auto	eol=lf
+/docs/**	text	linguist-generated -merge
+/go.sum		binary	linguist-generated
+/mise.lock	binary	linguist-generated

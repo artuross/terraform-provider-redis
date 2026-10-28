@@ -1,0 +1,5 @@
+{
+	"$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/refs/tags/v3.19.2/setting/schema.json",
+	"diagnostics.globals": ["redis"],
+	"runtime.version": "Lua 5.1"
+}

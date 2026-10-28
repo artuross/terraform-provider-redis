@@ -1,0 +1,21 @@
+$schema: "./cache/schemas/workspace.json"
+
+# ensure everyone runs a compatible moon version (update with mise's lockfile).
+versionConstraint: "=2.6.4"
+
+projects:
+  globs:
+    - "examples/*/moon.yaml"
+
+  sources:
+    # the provider itself
+    root: "."
+
+defaultProject: "root"
+
+vcs:
+  client: "git"
+  provider: "github"
+  defaultBranch: "main"
+
+telemetry: false

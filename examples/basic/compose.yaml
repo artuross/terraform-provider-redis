@@ -1,0 +1,19 @@
+name: terraform-provider-redis-basic
+
+services:
+  redis:
+    image: redis:8.10.3-alpine3.23
+    # every ACL rule must be its own argument
+    command: [
+      "redis-server",
+      # disable the passwordless default user
+      "--user", "default", "off",
+      # the user Terraform connects as, see moon.yaml
+      "--user", "terraform", "on", ">secret", "~*", "&*", "+@all",
+    ]
+    healthcheck:
+      test: ["CMD", "redis-cli", "--user", "terraform", "--pass", "secret", "--no-auth-warning", "ping"]
+      interval: 1s
+      retries: 30
+    ports:
+      - "127.0.0.1:16379:6379"

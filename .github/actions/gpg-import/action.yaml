@@ -1,0 +1,30 @@
+name: gpg-import
+description: >-
+  Import a GPG private key without a passphrase for signing, and output its fingerprint.
+
+inputs:
+  private-key:
+    description: ASCII-armored private key without a passphrase.
+    required: true
+
+outputs:
+  fingerprint:
+    description: Fingerprint of the imported key.
+    value: ${{ steps.import.outputs.fingerprint }}
+
+runs:
+  using: composite
+  steps:
+    # no cache, the action is used to sign releases
+    - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+      with:
+        install_args: nushell
+        cache: false
+
+    - id: import
+      shell: bash
+      env:
+        # the action's own directory, also when it's not part of the checked out workspace
+        ACTION_PATH: ${{ github.action_path }}
+        PRIVATE_KEY: ${{ inputs.private-key }}
+      run: nu "$ACTION_PATH/scripts/import.nu"

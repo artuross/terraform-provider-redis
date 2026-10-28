@@ -1,0 +1,127 @@
+$schema: "./.moon/cache/schemas/project.json"
+
+language: "go"
+layer: "application"
+
+fileGroups:
+  sources:
+    - "**/*.go"
+    - "go.{mod,sum}"
+    # embedded into the provider with go:embed, e.g. schema descriptions
+    - "internal/**/*.md"
+    # test fixtures, e.g. embedded into tests
+    - "**/testdata/**/*"
+
+tasks:
+  build:
+    description: "Build the provider into ./bin and write a Terraform CLI config (dev_overrides) next to it."
+    script: >-
+      go build -o bin/ ./cmd/terraform-provider-redis &&
+      printf 'provider_installation {\n  dev_overrides {\n    "artuross/redis" = "%s/bin"\n  }\n\n  direct {}\n}\n' "$PWD"
+      > bin/terraformrc
+    env:
+      CGO_ENABLED: "0"
+    inputs:
+      - "@group(sources)"
+    outputs:
+      - "bin/"
+    options:
+      runInCI: "always"
+    toolchains: ["system"]
+
+  clean:
+    description: "Remove build outputs."
+    command: "rm -rf bin"
+    options:
+      cache: false
+      runInCI: false
+    toolchains: ["system"]
+
+  docs:
+    description: "Generate the registry documentation in ./docs from the schema and ./examples."
+    command: "nu"
+    args: ["scripts/docs.nu"]
+    deps: ["build"]
+    env:
+      TF_CLI_CONFIG_FILE: "$workspaceRoot/bin/terraformrc"
+    options:
+      cache: false
+      runInCI: false
+    toolchains: ["system"]
+
+  docs-check:
+    description: "Check that ./docs is up to date (fix with `moon run docs`)."
+    command: "nu"
+    args: ["scripts/docs.nu", "--check"]
+    deps: ["build"]
+    env:
+      TF_CLI_CONFIG_FILE: "$workspaceRoot/bin/terraformrc"
+    options:
+      cache: false
+      runInCI: "always"
+    toolchains: ["system"]
+
+  format:
+    description: "Format Go files and the documentation snippets (`moon run :format` formats every project)."
+    script: >-
+      golangci-lint fmt ./... &&
+      go mod tidy &&
+      "${TERRAFORM_BINARY:-tofu}" fmt -recursive examples/provider examples/resources
+    options:
+      cache: false
+      runInCI: false
+    toolchains: ["system"]
+
+  format-check:
+    description: "Check that Go files and the documentation snippets are formatted (fix with `moon run format`)."
+    script: >-
+      golangci-lint fmt --diff ./... &&
+      "${TERRAFORM_BINARY:-tofu}" fmt -check -diff -recursive examples/provider examples/resources
+    inputs:
+      - "@group(sources)"
+      - "/.golangci.yaml"
+      - "/examples/provider/**/*.tf"
+      - "/examples/resources/**/*.tf"
+    options:
+      runInCI: "always"
+    toolchains: ["system"]
+
+  lint:
+    description: "Lint and vet the code (including tests), and check that go.mod/go.sum are tidy."
+    script: "golangci-lint run ./... && go vet --tags=integration,unit ./... && go mod tidy --diff"
+    inputs:
+      - "@group(sources)"
+      - "/.golangci.yaml"
+    options:
+      runInCI: "always"
+    toolchains: ["system"]
+
+  test-integration:
+    description: "Run integration tests against Redis in Docker, e.g. `REDIS_IMAGE=valkey/valkey:9.1.3-alpine3.24 moon run test-integration`."
+    # never cached, results depend on Docker and the Redis image. TERRAFORM_BINARY picks the binary, OpenTofu (`tofu`)
+    # by default; terraform-plugin-testing needs its absolute path, and the registry OpenTofu resolves providers from.
+    script: >-
+      binary="${TERRAFORM_BINARY:-tofu}";
+      TF_ACC_TERRAFORM_PATH="$(command -v "$binary")" || { echo "$binary not found" >&2; exit 1; };
+      TF_ACC_PROVIDER_HOST=registry.terraform.io;
+      if [ "$binary" = tofu ]; then TF_ACC_PROVIDER_HOST=registry.opentofu.org; fi;
+      export TF_ACC_TERRAFORM_PATH TF_ACC_PROVIDER_HOST;
+      go test --count=1 --tags=integration ./...
+    env:
+      CGO_ENABLED: "0"
+      TF_ACC: "1"
+    options:
+      cache: false
+      runInCI: "always"
+    toolchains: ["system"]
+
+  test-unit:
+    description: "Run unit tests."
+    command: "go test --tags=unit ./..."
+    env:
+      CGO_ENABLED: "0"
+    inputs:
+      - "@group(sources)"
+    options:
+      runInCI: "always"
+    toolchains: ["system"]

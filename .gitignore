@@ -1,0 +1,12 @@
+/bin
+/dist
+
+# terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+
+# moon
+/.moon/cache
+/.moon/docker
