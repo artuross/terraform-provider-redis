@@ -66,3 +66,13 @@ jobs:
           install_args: "go aqua:moonrepo/moon"
 
       - run: moon run :test-unit
+
+  summary:
+    name: Summary
+    if: always()
+    needs: [test-integration, test-unit]
+    runs-on: ubuntu-26.04
+    steps:
+      - run: test "$FAILED" = false
+        env:
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
