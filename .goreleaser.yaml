@@ -44,6 +44,7 @@ release:
   github:
     owner: artuross
     name: terraform-provider-redis
+  prerelease: auto
   extra_files:
     - glob: terraform-registry-manifest.json
       name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
