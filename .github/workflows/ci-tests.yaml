@@ -14,28 +14,65 @@ env:
   MOON_BASE: HEAD
 
 jobs:
+  test-integration-servers:
+    name: List integration test servers
+    runs-on: ubuntu-26.04
+    outputs:
+      servers: ${{ steps.servers.outputs.servers }}
+    env:
+      # latest patch of every minor version supporting functions (7.0+), pinned by digest; the versioning only allows
+      # versions of the same minor version (`compatibility`), so Renovate only proposes patches (also on a newer Alpine)
+      # renovate: datasource=docker versioning=regex:^(?<compatibility>(?<major>\d+)\.(?<minor>\d+))\.(?<patch>\d+)-alpine(?<build>\d+)\.(?<revision>\d+)$
+      IMAGES: |
+        redis:7.0.15-alpine3.20@sha256:c9d92d840fd011c908f040592857c724ae6d877f2aba5c40ad963276507386b2
+        redis:7.2.17-alpine3.21@sha256:2c933526722b4126a61d5c170f766dc159adf97682f0b1cbbc27b1666ba96d84
+        redis:7.4.12-alpine3.21@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f
+        redis:8.0.6-alpine3.21@sha256:5f61955be8ab2ccee9372b84ae4d4da2e2b156f87281e3f218544055e7ee04d4
+        redis:8.2.11-alpine3.22@sha256:489a769e0a54dc245896132a15c72d2bc7296719954da99398f43a3877e5f8eb
+        redis:8.4.8-alpine3.22@sha256:3e393dc9c57e628ebd5e0fc0bc4524f83632b6b873503d619e856af9322d4ef7
+        redis:8.6.8-alpine3.23@sha256:f4ed7d6732f9a5dcc6b64e2b347860b9f329334bfd4839a672f78cd981a8bba6
+        redis:8.8.4-alpine3.23@sha256:ab669f1420eaa05360a417b24f3bd210c9272e2c79a4bb35d3e50b4bfd50dbee
+        redis:8.10.3-alpine3.23@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
+        valkey/valkey:7.2.15-alpine3.24@sha256:f8c1a646f4b31ae4dc3980ff06723a20b533ea1123b9796d450d78ed53ad6d3e
+        valkey/valkey:8.0.12-alpine3.24@sha256:19f0b3d350f5e6de618086d79ecdc9c474ab159bebb16ed95a92e4211562fee5
+        valkey/valkey:8.1.11-alpine3.24@sha256:2602ace2be6569bc2bbb06f873776516ab9089821525be34f4305c67eb9db02a
+        valkey/valkey:9.0.7-alpine3.24@sha256:2d04268dfa26ab31cfa3fdc538866e76438b2d00e41db41b8cb86d780ac5a416
+        valkey/valkey:9.1.3-alpine3.24@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        with:
+          install_args: "nushell"
+
+      # [{"name": "redis:8.2", "image": "redis:8.2.11-alpine3.22@sha256:..."}, ...]
+      - id: servers
+        shell: nu {0}
+        run: |
+          let servers = $env.IMAGES | lines | where $it != "" | each {|image|
+            let parsed = $image | parse --regex '^(?:[^/]+/)?(?<name>[^/:]+):(?<version>\d+\.\d+)'
+            if ($parsed | is-empty) {
+              error make { msg: $"unexpected image `($image)`, expected `[owner/]name:major.minor...`" }
+            }
+
+            { name: $"($parsed.0.name):($parsed.0.version)", image: $image }
+          }
+
+          print ($servers | to json)
+          $"servers=($servers | to json --raw)\n" | save --append $env.GITHUB_OUTPUT
+
   test-integration:
-    name: Run integration tests (${{ matrix.tool }}, ${{ matrix.image }})
+    name: Run integration tests (${{ matrix.tool }}, ${{ matrix.server.name }})
+    needs: test-integration-servers
     runs-on: ubuntu-26.04
     strategy:
       # run every version even if one fails
       fail-fast: false
       matrix:
-        image:
-          - redis:7.0.15-alpine3.20
-          - redis:7.2.17-alpine3.21
-          - redis:7.4.12-alpine3.21
-          - redis:8.0.6-alpine3.21
-          - redis:8.2.11-alpine3.22
-          - redis:8.4.8-alpine3.22
-          - redis:8.6.8-alpine3.23
-          - redis:8.8.4-alpine3.23
-          - redis:8.10.3-alpine3.23
-          - valkey/valkey:7.2.15-alpine3.24
-          - valkey/valkey:8.0.12-alpine3.24
-          - valkey/valkey:8.1.11-alpine3.24
-          - valkey/valkey:9.0.7-alpine3.24
-          - valkey/valkey:9.1.3-alpine3.24
+        server: ${{ fromJSON(needs.test-integration-servers.outputs.servers) }}
         tool:
           - terraform
           - tofu
@@ -50,7 +87,7 @@ jobs:
 
       - run: moon run :test-integration
         env:
-          REDIS_IMAGE: ${{ matrix.image }}
+          REDIS_IMAGE: ${{ matrix.server.image }}
           TERRAFORM_BINARY: ${{ matrix.tool }}
 
   test-unit:

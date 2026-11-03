@@ -1,0 +1,106 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended", "schedule:weekly"],
+
+  // only what's configured below
+  enabledManagers: ["github-actions", "mise", "gomod", "docker-compose", "custom.regex"],
+
+  // config:recommended ignores e.g. **/examples/**, which has the example's compose.yaml
+  ignorePaths: [],
+
+  // let new releases settle before updating
+  minimumReleaseAge: "14 days",
+  automerge: true,
+
+  customManagers: [
+    {
+      // pinned images (`name:tag@sha256:...`) in a block annotated in the line above, in any file (`#` comments), until
+      // the next blank line, e.g.:
+      //   ... renovate: datasource=docker versioning=<versioning, optional>
+      //   image: redis:8.2.11-alpine3.22@sha256:...
+      customType: "regex",
+      managerFilePatterns: ["/.*/"],
+      matchStringsStrategy: "recursive",
+      matchStrings: [
+        "#\\s*renovate: datasource=(?<datasource>docker)(?: versioning=(?<versioning>\\S+))?[ \\t]*\\n(?:[^\\n]*\\S[^\\n]*\\n)+",
+        "(?<depName>[a-z0-9][a-z0-9./_-]*):(?<currentValue>[^@\\s\"']+)@(?<currentDigest>sha256:[a-f0-9]{64})",
+      ],
+    },
+    {
+      // a commit pinned to a release, annotated in the line above in any file (`//` or `#` comments), e.g.:
+      //   ... renovate: datasource=github-tags depName=LuaLS/vscode-lua version=v3.19.2
+      //   ".../LuaLS/vscode-lua/76ad79d8bf3260a78ce6ab3d967e27c39261dc95/setting/schema.json"
+      // updates both the version in the comment and the commit in the next line
+      customType: "regex",
+      managerFilePatterns: ["/.*/"],
+      matchStrings: [
+        "(?://|#)\\s*renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+) version=(?<currentValue>\\S+)\\s*\\n.*?\\b(?<currentDigest>[a-f0-9]{40})\\b",
+      ],
+    },
+    {
+      // moon's exact version, must match the one in mise.lock
+      customType: "regex",
+      managerFilePatterns: ["/^\\.moon/workspace\\.yaml$/"],
+      matchStrings: ['versionConstraint: "=(?<currentValue>[^"]+)"'],
+      depNameTemplate: "moonrepo/moon",
+      datasourceTemplate: "github-releases",
+      extractVersionTemplate: "^v(?<version>.+)$",
+    },
+  ],
+
+  packageRules: [
+    {
+      groupName: "GitHub Actions",
+      matchManagers: ["github-actions"],
+    },
+    {
+      // Redis/Valkey images, in the integration test matrix and the example
+      groupName: "Docker images",
+      matchDatasources: ["docker"],
+    },
+    {
+      // the example's image: only `8.10.3-alpine3.23` style tags; the Alpine version is part of the version (not a fixed
+      // suffix), so a newer version can come with a newer Alpine, and a newer Alpine alone is a patch update too
+      matchManagers: ["docker-compose"],
+      matchPackageNames: ["redis", "valkey/valkey"],
+      versioning: "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-alpine(?<build>\\d+)\\.(?<revision>\\d+)$",
+    },
+    {
+      // tools in mise.toml are "latest", updates only change mise.lock
+      groupName: "mise",
+      matchManagers: ["mise"],
+    },
+    {
+      // same PR as moon in mise.lock
+      groupName: "mise",
+      matchManagers: ["custom.regex"],
+      matchDepNames: ["moonrepo/moon"],
+    },
+    {
+      // bump the go directive in go.mod with the Go in mise.lock, in the same PR
+      groupName: "mise",
+      matchManagers: ["gomod"],
+      matchDepTypes: ["golang"],
+      matchDepNames: ["go"],
+      rangeStrategy: "bump",
+    },
+    {
+      groupName: "Go modules",
+      matchManagers: ["gomod"],
+      matchDepTypes: ["require", "indirect"],
+      postUpdateOptions: ["gomodTidy"],
+    },
+    // enable Go deps updates for minor/patch versions for indirect dependencies, but not for major versions
+    {
+      matchManagers: ["gomod"],
+      matchDepTypes: ["indirect"],
+      enabled: true,
+    },
+    {
+      matchManagers: ["gomod"],
+      matchDepTypes: ["indirect"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+  ],
+}

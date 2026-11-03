@@ -1,0 +1,6 @@
+{
+	// renovate: datasource=github-tags depName=LuaLS/vscode-lua version=v3.19.2
+	"$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/76ad79d8bf3260a78ce6ab3d967e27c39261dc95/setting/schema.json",
+	"diagnostics.globals": ["redis"],
+	"runtime.version": "Lua 5.1"
+}
