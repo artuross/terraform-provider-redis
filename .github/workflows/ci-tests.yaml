@@ -1,0 +1,68 @@
+name: CI - Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # in CI moon diffs against a base revision to find affected tasks; the shallow checkout doesn't have `main`, and the
+  # tasks below run always (runInCI: "always") anyway, so compare against the current commit
+  MOON_BASE: HEAD
+
+jobs:
+  test-integration:
+    name: Run integration tests (${{ matrix.tool }}, ${{ matrix.image }})
+    runs-on: ubuntu-26.04
+    strategy:
+      # run every version even if one fails
+      fail-fast: false
+      matrix:
+        image:
+          - redis:7.0.15-alpine3.20
+          - redis:7.2.17-alpine3.21
+          - redis:7.4.12-alpine3.21
+          - redis:8.0.6-alpine3.21
+          - redis:8.2.11-alpine3.22
+          - redis:8.4.8-alpine3.22
+          - redis:8.6.8-alpine3.23
+          - redis:8.8.4-alpine3.23
+          - redis:8.10.3-alpine3.23
+          - valkey/valkey:7.2.15-alpine3.24
+          - valkey/valkey:8.0.12-alpine3.24
+          - valkey/valkey:8.1.11-alpine3.24
+          - valkey/valkey:9.0.7-alpine3.24
+          - valkey/valkey:9.1.3-alpine3.24
+        tool:
+          - terraform
+          - tofu
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        with:
+          install_args: "go aqua:moonrepo/moon opentofu terraform"
+
+      - run: moon run :test-integration
+        env:
+          REDIS_IMAGE: ${{ matrix.image }}
+          TERRAFORM_BINARY: ${{ matrix.tool }}
+
+  test-unit:
+    name: Run unit tests
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        with:
+          install_args: "go aqua:moonrepo/moon"
+
+      - run: moon run :test-unit
