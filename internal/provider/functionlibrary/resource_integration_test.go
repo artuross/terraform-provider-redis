@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/artuross/terraform-provider-redis/internal/acctest"
 	"github.com/artuross/terraform-provider-redis/internal/provider/functionlibrary"
 )
 
@@ -24,14 +25,14 @@ func TestResource_Create(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
+		server := acctest.StartRedis(t)
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
-					Config: providerConfig(server.url, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
+					Config: acctest.ProviderConfig(server.URL, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
 							plancheck.ExpectResourceAction(libraryAddress, plancheck.ResourceActionCreate),
@@ -46,8 +47,8 @@ func TestResource_Create(t *testing.T) {
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr(libraryAddress, "name", "lib"),
 						resource.TestCheckResourceAttr(libraryAddress, "content", luaLibrary("lib", "fn", "v1")),
-						server.checkLibraries("lib"),
-						server.checkFCall("fn", "v1"),
+						checkLibraries(server, "lib"),
+						checkFCall(server, "fn", "v1"),
 					),
 				},
 			},
@@ -57,22 +58,22 @@ func TestResource_Create(t *testing.T) {
 	t.Run("multiple libraries", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
+		server := acctest.StartRedis(t)
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
-					Config: providerConfig(
-						server.url,
+					Config: acctest.ProviderConfig(
+						server.URL,
 						libraryResource("a", luaLibrary("a", "fn_a", "a")),
 						libraryResource("b", luaLibrary("b", "fn_b", "b")),
 					),
 					Check: resource.ComposeAggregateTestCheckFunc(
-						server.checkLibraries("a", "b"),
-						server.checkFCall("fn_a", "a"),
-						server.checkFCall("fn_b", "b"),
+						checkLibraries(server, "a", "b"),
+						checkFCall(server, "fn_a", "a"),
+						checkFCall(server, "fn_b", "b"),
 					),
 				},
 			},
@@ -82,20 +83,20 @@ func TestResource_Create(t *testing.T) {
 	t.Run("with credentials", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedisWithUsers(t)
+		server := acctest.StartRedisWithUsers(t)
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(map[string]string{
+			ProtoV6ProviderFactories: acctest.ProviderFactories(map[string]string{
 				"REDIS_USERNAME": "admin",
 				"REDIS_PASSWORD": "admin-password",
 			}),
-			CheckDestroy: server.checkLibraries(),
+			CheckDestroy: checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
-					Config: providerConfig(server.url, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
+					Config: acctest.ProviderConfig(server.URL, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
 					Check: resource.ComposeAggregateTestCheckFunc(
-						server.checkLibraries("lib"),
-						server.checkFCall("fn", "v1"),
+						checkLibraries(server, "lib"),
+						checkFCall(server, "fn", "v1"),
 					),
 				},
 			},
@@ -105,21 +106,21 @@ func TestResource_Create(t *testing.T) {
 	t.Run("with tls", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedisWithTLS(t)
+		server := acctest.StartRedisWithTLS(t)
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
 					// the certificate is self-signed
-					Config: providerConfig(
-						server.url+"?skip_verify=true",
+					Config: acctest.ProviderConfig(
+						server.URL+"?skip_verify=true",
 						libraryResource("test", luaLibrary("lib", "fn", "v1")),
 					),
 					Check: resource.ComposeAggregateTestCheckFunc(
-						server.checkLibraries("lib"),
-						server.checkFCall("fn", "v1"),
+						checkLibraries(server, "lib"),
+						checkFCall(server, "fn", "v1"),
 					),
 				},
 			},
@@ -132,14 +133,14 @@ func TestResource_Create(t *testing.T) {
 
 		type testCase struct {
 			name string
-			// starts the server, startRedis when nil
-			start func(t *testing.T) *redisServer
+			// starts the server, acctest.StartRedis when nil
+			start func(t *testing.T) *acctest.Server
 			// provider url, the server's url when nil
-			url func(server *redisServer) string
+			url func(server *acctest.Server) string
 			// provider environment, e.g. credentials
 			env map[string]string
 			// runs before creating, e.g. to load conflicting libraries
-			setup         func(t *testing.T, server *redisServer)
+			setup         func(t *testing.T, server *acctest.Server)
 			content       string
 			wantLibraries []string
 		}
@@ -168,53 +169,53 @@ func TestResource_Create(t *testing.T) {
 			},
 			{
 				name: "library already exists",
-				setup: func(t *testing.T, server *redisServer) {
-					server.loadLibrary(t, luaLibrary("lib", "fn", "existing"), false)
+				setup: func(t *testing.T, server *acctest.Server) {
+					loadLibrary(t, server, luaLibrary("lib", "fn", "existing"), false)
 				},
 				content:       luaLibrary("lib", "fn", "new"),
 				wantLibraries: []string{"lib"},
 			},
 			{
 				name: "function exists in another library",
-				setup: func(t *testing.T, server *redisServer) {
-					server.loadLibrary(t, luaLibrary("other", "fn", "existing"), false)
+				setup: func(t *testing.T, server *acctest.Server) {
+					loadLibrary(t, server, luaLibrary("other", "fn", "existing"), false)
 				},
 				content:       luaLibrary("lib", "fn", "new"),
 				wantLibraries: []string{"other"},
 			},
 			{
 				name:    "no credentials",
-				start:   startRedisWithUsers,
+				start:   acctest.StartRedisWithUsers,
 				content: luaLibrary("lib", "fn", "v1"),
 			},
 			{
 				name:    "wrong password",
-				start:   startRedisWithUsers,
+				start:   acctest.StartRedisWithUsers,
 				env:     map[string]string{"REDIS_USERNAME": "admin", "REDIS_PASSWORD": "wrong"},
 				content: luaLibrary("lib", "fn", "v1"),
 			},
 			{
 				name:    "unknown user",
-				start:   startRedisWithUsers,
+				start:   acctest.StartRedisWithUsers,
 				env:     map[string]string{"REDIS_USERNAME": "nobody", "REDIS_PASSWORD": "admin-password"},
 				content: luaLibrary("lib", "fn", "v1"),
 			},
 			{
 				name:    "no permission",
-				start:   startRedisWithUsers,
+				start:   acctest.StartRedisWithUsers,
 				env:     map[string]string{"REDIS_USERNAME": "reader", "REDIS_PASSWORD": "reader-password"},
 				content: luaLibrary("lib", "fn", "v1"),
 			},
 			{
 				name:    "tls with untrusted certificate",
-				start:   startRedisWithTLS,
+				start:   acctest.StartRedisWithTLS,
 				content: luaLibrary("lib", "fn", "v1"),
 			},
 			{
 				name:  "no tls to a tls server",
-				start: startRedisWithTLS,
-				url: func(server *redisServer) string {
-					return "redis://" + strings.TrimPrefix(server.url, "rediss://")
+				start: acctest.StartRedisWithTLS,
+				url: func(server *acctest.Server) string {
+					return "redis://" + strings.TrimPrefix(server.URL, "rediss://")
 				},
 				content: luaLibrary("lib", "fn", "v1"),
 			},
@@ -226,7 +227,7 @@ func TestResource_Create(t *testing.T) {
 
 				start := tt.start
 				if start == nil {
-					start = func(t *testing.T) *redisServer { return startRedis(t) }
+					start = func(t *testing.T) *acctest.Server { return acctest.StartRedis(t) }
 				}
 
 				server := start(t)
@@ -235,18 +236,18 @@ func TestResource_Create(t *testing.T) {
 					tt.setup(t, server)
 				}
 
-				url := server.url
+				url := server.URL
 				if tt.url != nil {
 					url = tt.url(server)
 				}
 
 				resp := callCreate(t, directResource(t, url, tt.env), tt.content)
 
-				assertRedisError(t, resp.Diagnostics, "loading function library")
+				acctest.AssertRedisError(t, resp.Diagnostics, "loading function library")
 				assert.True(t, resp.State.Raw.IsNull())
 
 				// nothing was loaded, existing libraries are untouched
-				require.NoError(t, server.checkLibraries(tt.wantLibraries...)(nil))
+				require.NoError(t, checkLibraries(server, tt.wantLibraries...)(nil))
 			})
 		}
 
@@ -254,12 +255,12 @@ func TestResource_Create(t *testing.T) {
 		t.Run("unsupported server", func(t *testing.T) {
 			t.Parallel()
 
-			server := startRedisImage(t, "redis:6.2.24-alpine3.21")
+			server := acctest.StartRedisImage(t, "redis:6.2.24-alpine3.21")
 			content := luaLibrary("lib", "fn", "v1")
 
-			resp := callCreate(t, directResource(t, server.url, nil), content)
+			resp := callCreate(t, directResource(t, server.URL, nil), content)
 
-			assertRedisError(t, resp.Diagnostics, "loading function library")
+			acctest.AssertRedisError(t, resp.Diagnostics, "loading function library")
 
 			// our explanation exactly, followed by the server's error
 			explanation, _, found := strings.Cut(resp.Diagnostics[0].Detail(), "\n\nServer error: ")
@@ -277,7 +278,7 @@ func TestResource_Create(t *testing.T) {
 			// nothing listens on port 1
 			resp := callCreate(t, directResource(t, "redis://127.0.0.1:1", nil), luaLibrary("lib", "fn", "v1"))
 
-			assertRedisError(t, resp.Diagnostics, "loading function library")
+			acctest.AssertRedisError(t, resp.Diagnostics, "loading function library")
 		})
 	})
 }
@@ -290,12 +291,12 @@ func TestResource_Read(t *testing.T) {
 	t.Run("no changes", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
-		config := providerConfig(server.url, libraryResource("test", content))
+		server := acctest.StartRedis(t)
+		config := acctest.ProviderConfig(server.URL, libraryResource("test", content))
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
 					Config: config,
@@ -313,26 +314,26 @@ func TestResource_Read(t *testing.T) {
 	t.Run("deleted outside terraform", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
-		config := providerConfig(server.url, libraryResource("test", content))
+		server := acctest.StartRedis(t)
+		config := acctest.ProviderConfig(server.URL, libraryResource("test", content))
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
 					Config: config,
 				},
 				{
 					// removed from the state, so it's created again
-					PreConfig: func() { server.deleteLibrary(t, "lib") },
+					PreConfig: func() { deleteLibrary(t, server, "lib") },
 					Config:    config,
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
 							plancheck.ExpectResourceAction(libraryAddress, plancheck.ResourceActionCreate),
 						},
 					},
-					Check: server.checkFCall("fn", "v1"),
+					Check: checkFCall(server, "fn", "v1"),
 				},
 			},
 		})
@@ -341,26 +342,26 @@ func TestResource_Read(t *testing.T) {
 	t.Run("changed outside terraform", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
-		config := providerConfig(server.url, libraryResource("test", content))
+		server := acctest.StartRedis(t)
+		config := acctest.ProviderConfig(server.URL, libraryResource("test", content))
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
 					Config: config,
 				},
 				{
 					// the code in Redis is read back, so it's changed back
-					PreConfig: func() { server.loadLibrary(t, luaLibrary("lib", "fn", "changed"), true) },
+					PreConfig: func() { loadLibrary(t, server, luaLibrary("lib", "fn", "changed"), true) },
 					Config:    config,
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
 							plancheck.ExpectResourceAction(libraryAddress, plancheck.ResourceActionUpdate),
 						},
 					},
-					Check: server.checkFCall("fn", "v1"),
+					Check: checkFCall(server, "fn", "v1"),
 				},
 			},
 		})
@@ -369,25 +370,25 @@ func TestResource_Read(t *testing.T) {
 	t.Run("unmanaged libraries", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
-		config := providerConfig(server.url, libraryResource("test", content))
+		server := acctest.StartRedis(t)
+		config := acctest.ProviderConfig(server.URL, libraryResource("test", content))
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
 			// only the managed library is deleted
-			CheckDestroy: server.checkLibraries("unmanaged"),
+			CheckDestroy: checkLibraries(server, "unmanaged"),
 			Steps: []resource.TestStep{
 				{
 					Config: config,
 				},
 				{
 					// left alone
-					PreConfig: func() { server.loadLibrary(t, luaLibrary("unmanaged", "unmanaged_fn", "x"), false) },
+					PreConfig: func() { loadLibrary(t, server, luaLibrary("unmanaged", "unmanaged_fn", "x"), false) },
 					Config:    config,
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 					},
-					Check: server.checkLibraries("lib", "unmanaged"),
+					Check: checkLibraries(server, "lib", "unmanaged"),
 				},
 			},
 		})
@@ -396,13 +397,13 @@ func TestResource_Read(t *testing.T) {
 	t.Run("similarly named library", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
-		config := providerConfig(server.url, libraryResource("test", content))
+		server := acctest.StartRedis(t)
+		config := acctest.ProviderConfig(server.URL, libraryResource("test", content))
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
 			// only the managed library is deleted
-			CheckDestroy: server.checkLibraries("lib_other"),
+			CheckDestroy: checkLibraries(server, "lib_other"),
 			Steps: []resource.TestStep{
 				{
 					Config: config,
@@ -410,8 +411,8 @@ func TestResource_Read(t *testing.T) {
 				{
 					// a library whose name starts with the managed one's must not be mistaken for it
 					PreConfig: func() {
-						server.deleteLibrary(t, "lib")
-						server.loadLibrary(t, luaLibrary("lib_other", "other_fn", "x"), false)
+						deleteLibrary(t, server, "lib")
+						loadLibrary(t, server, luaLibrary("lib_other", "other_fn", "x"), false)
 					},
 					Config: config,
 					ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -419,7 +420,7 @@ func TestResource_Read(t *testing.T) {
 							plancheck.ExpectResourceAction(libraryAddress, plancheck.ResourceActionCreate),
 						},
 					},
-					Check: server.checkLibraries("lib", "lib_other"),
+					Check: checkLibraries(server, "lib", "lib_other"),
 				},
 			},
 		})
@@ -428,12 +429,12 @@ func TestResource_Read(t *testing.T) {
 	t.Run("import", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
-		config := providerConfig(server.url, libraryResource("test", content))
+		server := acctest.StartRedis(t)
+		config := acctest.ProviderConfig(server.URL, libraryResource("test", content))
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
 					Config: config,
@@ -454,14 +455,14 @@ func TestResource_Read(t *testing.T) {
 	t.Run("import block", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
-		config := providerConfig(server.url, libraryResource("test", content))
+		server := acctest.StartRedis(t)
+		config := acctest.ProviderConfig(server.URL, libraryResource("test", content))
 
-		server.loadLibrary(t, content, false)
+		loadLibrary(t, server, content, false)
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
 					Config:          config,
@@ -479,9 +480,9 @@ func TestResource_Read(t *testing.T) {
 	t.Run("import missing library", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
+		server := acctest.StartRedis(t)
 
-		resp := callRead(t, directResource(t, server.url, nil), "missing")
+		resp := callRead(t, directResource(t, server.URL, nil), "missing")
 
 		assert.Empty(t, resp.Diagnostics)
 		assert.True(t, resp.State.Raw.IsNull())
@@ -494,18 +495,18 @@ func TestResource_Update(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
+		server := acctest.StartRedis(t)
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
-					Config: providerConfig(server.url, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
+					Config: acctest.ProviderConfig(server.URL, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
 				},
 				{
 					// new code, same name: replaced in place
-					Config: providerConfig(server.url, libraryResource("test", luaLibrary("lib", "fn", "v2"))),
+					Config: acctest.ProviderConfig(server.URL, libraryResource("test", luaLibrary("lib", "fn", "v2"))),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
 							plancheck.ExpectResourceAction(libraryAddress, plancheck.ResourceActionUpdate),
@@ -514,8 +515,8 @@ func TestResource_Update(t *testing.T) {
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr(libraryAddress, "name", "lib"),
 						resource.TestCheckResourceAttr(libraryAddress, "content", luaLibrary("lib", "fn", "v2")),
-						server.checkLibraries("lib"),
-						server.checkFCall("fn", "v2"),
+						checkLibraries(server, "lib"),
+						checkFCall(server, "fn", "v2"),
 					),
 				},
 			},
@@ -525,19 +526,19 @@ func TestResource_Update(t *testing.T) {
 	t.Run("removed functions", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
+		server := acctest.StartRedis(t)
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
-					Config: providerConfig(server.url, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
+					Config: acctest.ProviderConfig(server.URL, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
 				},
 				{
 					// functions removed from the code are removed from Redis too
-					Config: providerConfig(
-						server.url,
+					Config: acctest.ProviderConfig(
+						server.URL,
 						libraryResource("test", luaLibrary("lib", "renamed_fn", "v1")),
 					),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -546,8 +547,8 @@ func TestResource_Update(t *testing.T) {
 						},
 					},
 					Check: resource.ComposeAggregateTestCheckFunc(
-						server.checkFCall("renamed_fn", "v1"),
-						checkError(server.checkFCall("fn", "v1"), "FCALL fn: ERR Function not found"),
+						checkFCall(server, "renamed_fn", "v1"),
+						acctest.CheckError(checkFCall(server, "fn", "v1"), "FCALL fn: ERR Function not found"),
 					),
 				},
 			},
@@ -557,19 +558,19 @@ func TestResource_Update(t *testing.T) {
 	t.Run("new library name", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
+		server := acctest.StartRedis(t)
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
-			CheckDestroy:             server.checkLibraries(),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
+			CheckDestroy:             checkLibraries(server),
 			Steps: []resource.TestStep{
 				{
-					Config: providerConfig(server.url, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
+					Config: acctest.ProviderConfig(server.URL, libraryResource("test", luaLibrary("lib", "fn", "v1"))),
 				},
 				{
 					// the old library is deleted before the new one is loaded
-					Config: providerConfig(
-						server.url,
+					Config: acctest.ProviderConfig(
+						server.URL,
 						libraryResource("test", luaLibrary("renamed", "fn", "v2")),
 					),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -582,8 +583,8 @@ func TestResource_Update(t *testing.T) {
 					},
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr(libraryAddress, "name", "renamed"),
-						server.checkLibraries("renamed"),
-						server.checkFCall("fn", "v2"),
+						checkLibraries(server, "renamed"),
+						checkFCall(server, "fn", "v2"),
 					),
 				},
 			},
@@ -614,21 +615,21 @@ func TestResource_Update(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				server := startRedis(t)
+				server := acctest.StartRedis(t)
 				content := luaLibrary("lib", "fn", "v1")
 
-				server.loadLibrary(t, content, false)
-				server.loadLibrary(t, luaLibrary("other", "taken", "x"), false)
+				loadLibrary(t, server, content, false)
+				loadLibrary(t, server, luaLibrary("other", "taken", "x"), false)
 
-				resp := callUpdate(t, directResource(t, server.url, nil), "lib", content, tt.content)
+				resp := callUpdate(t, directResource(t, server.URL, nil), "lib", content, tt.content)
 
-				assertRedisError(t, resp.Diagnostics, "replacing function library")
+				acctest.AssertRedisError(t, resp.Diagnostics, "replacing function library")
 
 				// the previous version stays loaded and in the state
-				s := schemaOf(t, functionlibrary.NewResource())
+				s := acctest.SchemaOf(t, functionlibrary.NewResource())
 				assert.Equal(t, libraryObject(t, s, content, "lib"), resp.State.Raw)
-				require.NoError(t, server.checkFCall("fn", "v1")(nil))
-				require.NoError(t, server.checkLibraries("lib", "other")(nil))
+				require.NoError(t, checkFCall(server, "fn", "v1")(nil))
+				require.NoError(t, checkLibraries(server, "lib", "other")(nil))
 			})
 		}
 	})
@@ -640,33 +641,33 @@ func TestResource_Delete(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
+		server := acctest.StartRedis(t)
 
 		resource.Test(t, resource.TestCase{
-			ProtoV6ProviderFactories: providerFactories(nil),
+			ProtoV6ProviderFactories: acctest.ProviderFactories(nil),
 			// libraries not managed by Terraform are left alone
-			CheckDestroy: server.checkLibraries("unmanaged"),
+			CheckDestroy: checkLibraries(server, "unmanaged"),
 			Steps: []resource.TestStep{
 				{
-					PreConfig: func() { server.loadLibrary(t, luaLibrary("unmanaged", "unmanaged_fn", "x"), false) },
-					Config: providerConfig(
-						server.url,
+					PreConfig: func() { loadLibrary(t, server, luaLibrary("unmanaged", "unmanaged_fn", "x"), false) },
+					Config: acctest.ProviderConfig(
+						server.URL,
 						libraryResource("a", luaLibrary("a", "fn_a", "a")),
 						libraryResource("b", luaLibrary("b", "fn_b", "b")),
 					),
 				},
 				{
 					// removing one library leaves the others alone
-					Config: providerConfig(server.url, libraryResource("a", luaLibrary("a", "fn_a", "a"))),
+					Config: acctest.ProviderConfig(server.URL, libraryResource("a", luaLibrary("a", "fn_a", "a"))),
 					ConfigPlanChecks: resource.ConfigPlanChecks{
 						PreApply: []plancheck.PlanCheck{
 							plancheck.ExpectResourceAction("redis_function_library.b", plancheck.ResourceActionDestroy),
 						},
 					},
 					Check: resource.ComposeAggregateTestCheckFunc(
-						server.checkLibraries("a", "unmanaged"),
-						server.checkFCall("fn_a", "a"),
-						checkError(server.checkFCall("fn_b", "b"), "FCALL fn_b: ERR Function not found"),
+						checkLibraries(server, "a", "unmanaged"),
+						checkFCall(server, "fn_a", "a"),
+						acctest.CheckError(checkFCall(server, "fn_b", "b"), "FCALL fn_b: ERR Function not found"),
 					),
 				},
 			},
@@ -678,9 +679,9 @@ func TestResource_Delete(t *testing.T) {
 	t.Run("already deleted", func(t *testing.T) {
 		t.Parallel()
 
-		server := startRedis(t)
+		server := acctest.StartRedis(t)
 
-		resp := callDelete(t, directResource(t, server.url, nil), "missing", luaLibrary("missing", "fn", "x"))
+		resp := callDelete(t, directResource(t, server.URL, nil), "missing", luaLibrary("missing", "fn", "x"))
 
 		assert.Empty(t, resp.Diagnostics)
 	})
