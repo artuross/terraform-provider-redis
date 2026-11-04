@@ -15,6 +15,13 @@ resource "redis_function_library" "counters" {
   content = file("${path.module}/../libraries/counters.lua")
 }
 
+resource "redis_string" "config" {
+  key = "app:config"
+  value = jsonencode({
+    max_visits = 100
+  })
+}
+
 output "library_name" {
   value = redis_function_library.counters.name
 }

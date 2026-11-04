@@ -18,6 +18,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/artuross/terraform-provider-redis/internal/provider/functionlibrary"
+	"github.com/artuross/terraform-provider-redis/internal/provider/redisstring"
 )
 
 var _ provider.Provider = (*redisProvider)(nil)
@@ -121,6 +122,7 @@ func (p *redisProvider) Configure(
 func (p *redisProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		functionlibrary.NewResource,
+		redisstring.NewResource,
 	}
 }
 

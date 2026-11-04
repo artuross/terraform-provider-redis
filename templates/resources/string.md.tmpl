@@ -1,0 +1,31 @@
+---
+page_title: "{{.RenderedProviderName}}: {{.Name}}"
+subcategory: ""
+description: "Manages a Redis String resource."
+---
+
+# {{.Name}} ({{.Type}})
+
+Manages a Redis [string](https://redis.io/docs/latest/develop/data-types/strings/), e.g. configuration meant to be read
+by clients and only ever changed through Terraform.
+
+Uses following commands:
+
+- `SET key value NX` to create a string, an existing key is never overwritten (delete it first, or import it),
+- `SET` to update the value,
+- `GET` to read the value, changes made outside Terraform are reverted,
+- `DEL` to delete a string.
+
+## Example usage
+
+{{ tffile "examples/resources/redis_string/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+{{ codefile "shell" .ImportFile }}

@@ -2,6 +2,7 @@
 
 Manages a single (non-cluster) Redis or Valkey server. Currently, this provider supports only the following features:
 
+- [Strings](https://redis.io/docs/latest/develop/data-types/strings/) as `redis_string` resource.
 - [Redis Functions](https://redis.io/docs/latest/develop/programmability/functions-intro/) (Lua scripts) as `redis_function_library` resource.
 
 Supported servers: Redis 7.0+ and Valkey 7.2+. Works with Terraform and OpenTofu.
@@ -41,11 +42,11 @@ A runnable example is in [examples/basic](examples/basic).
 
 ## Configuration
 
-| Setting | Environment variable | Description                                                                                 |
-| ------- | -------------------- | ------------------------------------------------------------------------------------------- |
-| `url`   | -                    | Required. `redis://host:port`, or `rediss://host:port` for TLS.                             |
-| -       | `REDIS_USERNAME`     | ACL username.                                                                               |
-| -       | `REDIS_PASSWORD`     | Password.                                                                                   |
+| Setting | Environment variable | Description                                                     |
+| ------- | -------------------- | --------------------------------------------------------------- |
+| `url`   | -                    | Required. `redis://host:port`, or `rediss://host:port` for TLS. |
+| -       | `REDIS_USERNAME`     | ACL username.                                                   |
+| -       | `REDIS_PASSWORD`     | Password.                                                       |
 
 Credentials **can only** be set with environment variables, so they never end up in `.tf` files. The URL **must not** contain them. The URL accepts [go-redis options](https://pkg.go.dev/github.com/redis/go-redis/v9#ParseURL), e.g.
 `?dial_timeout=5s`.

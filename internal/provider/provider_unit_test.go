@@ -181,12 +181,17 @@ func TestProvider_Configure(t *testing.T) {
 
 func TestProvider_Resources(t *testing.T) {
 	resources := provider.New("test", withEnv(nil))().Resources(t.Context())
-	require.Len(t, resources, 1)
 
-	resp := &resource.MetadataResponse{}
-	resources[0]().Metadata(t.Context(), resource.MetadataRequest{ProviderTypeName: "redis"}, resp)
+	typeNames := make([]string, 0, len(resources))
 
-	assert.Equal(t, "redis_function_library", resp.TypeName)
+	for _, newResource := range resources {
+		resp := &resource.MetadataResponse{}
+		newResource().Metadata(t.Context(), resource.MetadataRequest{ProviderTypeName: "redis"}, resp)
+
+		typeNames = append(typeNames, resp.TypeName)
+	}
+
+	assert.Equal(t, []string{"redis_function_library", "redis_string"}, typeNames)
 }
 
 func TestProvider_DataSources(t *testing.T) {

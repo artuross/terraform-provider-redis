@@ -17,3 +17,11 @@ tasks:
       cache: false
       runInCI: false
     toolchains: ["system"]
+
+  get:
+    description: "Read a string: `moon run examples/basic:get -- app:config`."
+    command: "docker compose exec redis redis-cli --user $REDIS_USERNAME --pass $REDIS_PASSWORD --no-auth-warning GET"
+    options:
+      cache: false
+      runInCI: false
+    toolchains: ["system"]
