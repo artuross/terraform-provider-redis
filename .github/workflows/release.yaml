@@ -35,4 +35,5 @@ jobs:
       - run: goreleaser release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
           GPG_FINGERPRINT: ${{ steps.gpg.outputs.fingerprint }}
