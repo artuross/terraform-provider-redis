@@ -137,39 +137,45 @@ url = "https://github.com/hashicorp/terraform-plugin-docs/releases/download/v0.2
 url_api = "https://api.github.com/repos/hashicorp/terraform-plugin-docs/releases/assets/400794886"
 
 [[tools."aqua:moonrepo/moon"]]
-version = "2.6.4"
+version = "2.6.5"
 backend = "aqua:moonrepo/moon"
 specifiers = ["latest"]
 
 [tools."aqua:moonrepo/moon"."platforms.linux-arm64"]
-checksum = "sha256:25135ec696c451bbbc66e3dd594ac9e6e392ac1162afbc3f8dba181a1e7fd63a"
-url = "https://github.com/moonrepo/moon/releases/download/v2.6.4/moon_cli-aarch64-unknown-linux-gnu.tar.xz"
-url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/669917604"
+checksum = "sha256:dda511d98cf46496b5231b04604e27fe969168a6755e745834a07014c4f7c984"
+checksum_source = "mise-versions"
+url = "https://github.com/moonrepo/moon/releases/download/v2.6.5/moon_cli-aarch64-unknown-linux-gnu.tar.xz"
+url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/689680380"
 
 [tools."aqua:moonrepo/moon"."platforms.linux-arm64-musl"]
-checksum = "sha256:80b4cb713d48c81a2e1f86c0e3089ada71877523a1909bbc1b32a1505004d8e0"
-url = "https://github.com/moonrepo/moon/releases/download/v2.6.4/moon_cli-aarch64-unknown-linux-musl.tar.xz"
-url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/669917621"
+checksum = "sha256:1870cadac67e8115e976e4fc7782fbb327d407b2ed9b61fc6abf5fb394a684c3"
+checksum_source = "mise-versions"
+url = "https://github.com/moonrepo/moon/releases/download/v2.6.5/moon_cli-aarch64-unknown-linux-musl.tar.xz"
+url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/689680403"
 
 [tools."aqua:moonrepo/moon"."platforms.linux-x64"]
-checksum = "sha256:a8e403a03ecf8133ec3d4740d806108eb885ffa40652f61d38a6e727fb452016"
-url = "https://github.com/moonrepo/moon/releases/download/v2.6.4/moon_cli-x86_64-unknown-linux-gnu.tar.xz"
-url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/669917684"
+checksum = "sha256:29b4bae3242c7bb65232227ae21a9996dba2d2d21871fe5bb946cbc88695ef20"
+checksum_source = "mise-versions"
+url = "https://github.com/moonrepo/moon/releases/download/v2.6.5/moon_cli-x86_64-unknown-linux-gnu.tar.xz"
+url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/689680457"
 
 [tools."aqua:moonrepo/moon"."platforms.linux-x64-musl"]
-checksum = "sha256:690a561180de834befc7dcd855e6758db04aa148b8e8a3838f70e7ee955fded6"
-url = "https://github.com/moonrepo/moon/releases/download/v2.6.4/moon_cli-x86_64-unknown-linux-musl.tar.xz"
-url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/669917705"
+checksum = "sha256:f14fec6096ed62ca5976288d093ef9f555f282bc8e9f1a9bbfbe82ae27119234"
+checksum_source = "mise-versions"
+url = "https://github.com/moonrepo/moon/releases/download/v2.6.5/moon_cli-x86_64-unknown-linux-musl.tar.xz"
+url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/689680487"
 
 [tools."aqua:moonrepo/moon"."platforms.macos-arm64"]
-checksum = "sha256:3f2283247a723e26fc8462323ad48bfac01ac31b9f8b48cf210418bc1d8fec73"
-url = "https://github.com/moonrepo/moon/releases/download/v2.6.4/moon_cli-aarch64-apple-darwin.tar.xz"
-url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/669917607"
+checksum = "sha256:71a2ce796f844af4cd705af19e3a836ca7b97c8e38f702b7c1f0a95ba8b08290"
+checksum_source = "mise-versions"
+url = "https://github.com/moonrepo/moon/releases/download/v2.6.5/moon_cli-aarch64-apple-darwin.tar.xz"
+url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/689680379"
 
 [tools."aqua:moonrepo/moon"."platforms.windows-x64"]
-checksum = "sha256:6cad1b7f3d10473da1d719da82f320ef2635b4a242873e01a16e73b7ef6c1b59"
-url = "https://github.com/moonrepo/moon/releases/download/v2.6.4/moon_cli-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/669917663"
+checksum = "sha256:9994fb457b5c1c85bb80134cfdff287b1d20ae2b0443a31190c9866926341761"
+checksum_source = "mise-versions"
+url = "https://github.com/moonrepo/moon/releases/download/v2.6.5/moon_cli-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/moonrepo/moon/releases/assets/689680441"
 
 [[tools.go]]
 version = "1.27.3"
@@ -297,34 +303,34 @@ url = "https://github.com/opentofu/opentofu/releases/download/v1.13.2/tofu_1.13.
 url_api = "https://api.github.com/repos/opentofu/opentofu/releases/assets/662742635"
 
 [[tools.terraform]]
-version = "1.17.0"
+version = "1.17.1"
 backend = "aqua:hashicorp/terraform"
 specifiers = ["latest"]
 
 [tools.terraform."platforms.linux-arm64"]
-checksum = "sha256:f32478134ffc6d710eec474bbd316652cdddc0f4e336973a3745e8d3a3309cdf"
-url = "https://releases.hashicorp.com/terraform/1.17.0/terraform_1.17.0_linux_arm64.zip"
+checksum = "sha256:988e950a1c23058093b0e66ab2d5fb53fc18345ecfbd5871acf51dbac9325edd"
+url = "https://releases.hashicorp.com/terraform/1.17.1/terraform_1.17.1_linux_arm64.zip"
 
 [tools.terraform."platforms.linux-arm64-musl"]
-checksum = "sha256:f32478134ffc6d710eec474bbd316652cdddc0f4e336973a3745e8d3a3309cdf"
-url = "https://releases.hashicorp.com/terraform/1.17.0/terraform_1.17.0_linux_arm64.zip"
+checksum = "sha256:988e950a1c23058093b0e66ab2d5fb53fc18345ecfbd5871acf51dbac9325edd"
+url = "https://releases.hashicorp.com/terraform/1.17.1/terraform_1.17.1_linux_arm64.zip"
 
 [tools.terraform."platforms.linux-x64"]
-checksum = "sha256:c168cab7c637a8769fdb90089ddd19de701bc6ff8aca64dc2e2185fe46f59f67"
-url = "https://releases.hashicorp.com/terraform/1.17.0/terraform_1.17.0_linux_amd64.zip"
+checksum = "sha256:4638628058e71a55212b1c563712eac03b902128f40740f3dc8174df12135061"
+url = "https://releases.hashicorp.com/terraform/1.17.1/terraform_1.17.1_linux_amd64.zip"
 
 [tools.terraform."platforms.linux-x64-musl"]
-checksum = "sha256:c168cab7c637a8769fdb90089ddd19de701bc6ff8aca64dc2e2185fe46f59f67"
-url = "https://releases.hashicorp.com/terraform/1.17.0/terraform_1.17.0_linux_amd64.zip"
+checksum = "sha256:4638628058e71a55212b1c563712eac03b902128f40740f3dc8174df12135061"
+url = "https://releases.hashicorp.com/terraform/1.17.1/terraform_1.17.1_linux_amd64.zip"
 
 [tools.terraform."platforms.macos-arm64"]
-checksum = "sha256:7472a54cca911d46c0e399a5ebbce44444912d0d4dad7495f37f1fa51e7ca6b7"
-url = "https://releases.hashicorp.com/terraform/1.17.0/terraform_1.17.0_darwin_arm64.zip"
+checksum = "sha256:b1ecb3fe0d0a0290c1ab6f83d967d43f25da05d0b671ee0fb355252268dce95a"
+url = "https://releases.hashicorp.com/terraform/1.17.1/terraform_1.17.1_darwin_arm64.zip"
 
 [tools.terraform."platforms.macos-x64"]
-checksum = "sha256:3773397524196e4ebbf7167e2b9fb478dff1962d555d649f616ba97ca446a143"
-url = "https://releases.hashicorp.com/terraform/1.17.0/terraform_1.17.0_darwin_amd64.zip"
+checksum = "sha256:fde92387cf9c0de74255003c85291f8fbede54585c10d0635ca7a43633d4d171"
+url = "https://releases.hashicorp.com/terraform/1.17.1/terraform_1.17.1_darwin_amd64.zip"
 
 [tools.terraform."platforms.windows-x64"]
-checksum = "sha256:2948dd7f77dec0f562ec29000103e0441d915be5e5f1a02c1ce23681951cfb19"
-url = "https://releases.hashicorp.com/terraform/1.17.0/terraform_1.17.0_windows_amd64.zip"
+checksum = "sha256:a3b71365cff94c0f978cf75d86addb075ea1bb6409055ea0ab359bf057d7898a"
+url = "https://releases.hashicorp.com/terraform/1.17.1/terraform_1.17.1_windows_amd64.zip"

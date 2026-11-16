@@ -1,7 +1,7 @@
 $schema: "./cache/schemas/workspace.json"
 
 # ensure everyone runs a compatible moon version (update with mise's lockfile).
-versionConstraint: "=2.6.4"
+versionConstraint: "=2.6.5"
 
 projects:
   globs:
